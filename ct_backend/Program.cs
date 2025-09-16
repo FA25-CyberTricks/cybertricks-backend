@@ -1,4 +1,6 @@
 
+using ct_backend.Infrastructure.Extension;
+
 namespace ct_backend
 {
     public class Program
@@ -8,6 +10,19 @@ namespace ct_backend
             var builder = WebApplication.CreateBuilder(args);
 
             // Add services to the container.
+            builder.Services.AddRouting(options =>
+            {
+                options.LowercaseUrls = true;
+                options.AppendTrailingSlash = false;
+            });
+            builder.Services.AddCoreInfrastructure(builder.Configuration);
+            builder.Services.AddCors(opt =>
+            {
+                opt.AddDefaultPolicy(p => p
+                    .AllowAnyOrigin()
+                    .AllowAnyHeader()
+                    .AllowAnyMethod());
+            });
 
             builder.Services.AddControllers();
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
@@ -15,6 +30,8 @@ namespace ct_backend
             builder.Services.AddSwaggerGen();
 
             var app = builder.Build();
+
+            app.UseForwardedHeaders();
 
             // Configure the HTTP request pipeline.
             if (app.Environment.IsDevelopment())
@@ -25,8 +42,10 @@ namespace ct_backend
 
             app.UseHttpsRedirection();
 
-            app.UseAuthorization();
+            app.UseCors();
 
+            app.UseAuthentication();
+            app.UseAuthorization();
 
             app.MapControllers();
 
