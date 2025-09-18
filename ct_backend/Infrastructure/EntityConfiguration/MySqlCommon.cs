@@ -30,7 +30,7 @@ namespace ct_backend.Infrastructure.EntityConfiguration
             b.Property(x => x.UpdatedAt)
              .HasColumnType("datetime")
              .HasDefaultValueSql("CURRENT_TIMESTAMP")
-             .ValueGeneratedOnAddOrUpdate();
+             .ValueGeneratedNever();
         }
 
         public static PropertyBuilder<TEnum> AsStringEnum<TEnum>(this PropertyBuilder<TEnum> b)
