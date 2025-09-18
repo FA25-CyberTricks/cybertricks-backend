@@ -22,7 +22,7 @@ namespace ct_backend.Infrastructure.Extension
 
             //services.AddScopedServicesByConvention(typeof(IMovieService).Assembly);
 
-            //services.AddAutoMapper(cfg => cfg.AddMaps(AppDomain.CurrentDomain.GetAssemblies()));
+            services.AddAutoMapper(cfg => cfg.AddMaps(AppDomain.CurrentDomain.GetAssemblies()));
 
             return services;
         }

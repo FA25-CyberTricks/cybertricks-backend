@@ -63,19 +63,19 @@ namespace ct_backend.Infrastructure.Extension.Database
                          IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(config["Jwt:Key"]
                             ?? throw new InvalidOperationException("Missing:Jwt:Key")))
                      };
-                 })
-                .AddGoogle(options =>
-                {
-                    options.ClientId = config["Authentication:Google:ClientId"]
-                        ?? throw new InvalidOperationException("Missing Google:ClientId"); ;
-                    options.ClientSecret = config["Authentication:Google:ClientSecret"]
-                        ?? throw new InvalidOperationException("Missing Google:ClientSecret"); ;
-                    options.CallbackPath = "/signin-google";
-                    // Explicitly request the profile scope
-                    options.Scope.Add("profile");
+                // })
+                //.AddGoogle(options =>
+                //{
+                //    options.ClientId = config["Authentication:Google:ClientId"]
+                //        ?? throw new InvalidOperationException("Missing Google:ClientId"); ;
+                //    options.ClientSecret = config["Authentication:Google:ClientSecret"]
+                //        ?? throw new InvalidOperationException("Missing Google:ClientSecret"); ;
+                //    options.CallbackPath = "/signin-google";
+                //    // Explicitly request the profile scope
+                //    options.Scope.Add("profile");
 
-                    // Map the picture to a claim
-                    options.ClaimActions.MapJsonKey("urn:google:picture", "picture", "url");
+                //    // Map the picture to a claim
+                //    options.ClaimActions.MapJsonKey("urn:google:picture", "picture", "url");
                 });
             return services;
         }
