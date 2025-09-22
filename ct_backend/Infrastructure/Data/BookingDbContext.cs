@@ -21,7 +21,6 @@ namespace ct_backend.Infrastructure.Data
         // User related entities
         public DbSet<MenuCategory> MenuCategories { get; set; }
         public DbSet<MenuItem> MenuItems { get; set; }
-        public DbSet<MenuItemImage> MenuItemImages { get; set; }
 
         // Order related entities
         public DbSet<Order> Orders { get; set; }

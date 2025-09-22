@@ -14,6 +14,7 @@ namespace ct_backend.Infrastructure.EntityConfiguration
             b.Property(x => x.Name).HasMaxLength(200).IsRequired();
             b.Property(x => x.Price).HasColumnType("decimal(12,2)");
             b.Property(x => x.Active).HasDefaultValue(true);
+            b.Property(x => x.Url).HasMaxLength(500).IsRequired();
 
             b.HasOne(x => x.Brand)
              .WithMany()
@@ -24,11 +25,6 @@ namespace ct_backend.Infrastructure.EntityConfiguration
              .WithMany(c => c.Items)
              .HasForeignKey(x => x.CategoryId)
              .OnDelete(DeleteBehavior.SetNull);
-
-            b.HasMany(x => x.Images)
-             .WithOne(i => i.Item)
-             .HasForeignKey(i => i.ItemId)
-             .OnDelete(DeleteBehavior.Cascade);
 
             b.HasMany(x => x.OrderItems)
              .WithOne(oi => oi.Item)
