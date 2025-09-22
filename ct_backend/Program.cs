@@ -1,11 +1,11 @@
-
+using ct_backend.Infrastructure.Data;
 using ct_backend.Infrastructure.Extension;
 
 namespace ct_backend
 {
     public class Program
     {
-        public static void Main(string[] args)
+        public static async Task Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
 
@@ -30,6 +30,14 @@ namespace ct_backend
             builder.Services.AddSwaggerGen();
 
             var app = builder.Build();
+
+            //// Seed Database
+            //using (var scope = app.Services.CreateScope())
+            //{
+            //    var ctx = scope.ServiceProvider.GetRequiredService<BookingDbContext>();
+            //    var seeder = new DatabaseSeeder(ctx);
+            //    await seeder.SeedAllAsync();
+            //}
 
             app.UseForwardedHeaders();
 

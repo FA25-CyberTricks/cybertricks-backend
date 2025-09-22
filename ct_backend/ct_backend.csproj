@@ -27,7 +27,6 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<Folder Include="Features\Machine\" />
 		<Folder Include="Infrastructure\ExternalServices\" />
 	</ItemGroup>
 
