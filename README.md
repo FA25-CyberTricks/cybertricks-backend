@@ -30,11 +30,13 @@
 ---
 
 ## 🏗 Kiến trúc Backend
+```plaintext
 📦 ct.backend
-├─ Domain/ # Entities, Enums
-├─ Infrastructure/ # EF Core, Identity, ExternalServices
-├─ Features/ # Controllers, Dtos (Vertical Slice Architecture)
-└─ Common/ # Helpers, Validators
+├─ Domain/           # Entities, Enums
+├─ Infrastructure/   # EF Core, Identity, ExternalServices
+├─ Features/         # Controllers, Dtos (Vertical Slice Architecture)
+└─ Common/           # Helpers, Validators
+```
 
 ## 🛠 Tech Stack
 - **Framework**: ASP.NET Core 8  
@@ -57,3 +59,4 @@ dotnet ef database update
 
 # Run API
 dotnet run
+```
