@@ -38,6 +38,13 @@ namespace ct_backend.Infrastructure.Data
         public DbSet<Message> Messages { get; set; }
         public DbSet<Notification> Notifications { get; set; }
 
+        // User
+        public DbSet<BrandOwner> BrandOwners { get; set; }
+        public DbSet<StoreStaff> StoreStaffs { get; set; }
+
+        // Additional
+        public DbSet<StoreAccount> StoreAccounts { get; set; }
+
 
         public BookingDbContext(DbContextOptions<BookingDbContext> options)
          : base(options) { }

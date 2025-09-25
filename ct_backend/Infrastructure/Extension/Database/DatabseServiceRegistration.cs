@@ -1,11 +1,7 @@
 ﻿using ct_backend.Domain.Entities;
 using ct_backend.Infrastructure.Data;
-using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Tokens;
-using System.Text;
 
 namespace ct_backend.Infrastructure.Extension.Database
 {
@@ -45,38 +41,10 @@ namespace ct_backend.Infrastructure.Extension.Database
                     options.SignIn.RequireConfirmedEmail = true; // Email must exist
                     options.SignIn.RequireConfirmedPhoneNumber = false; //
                 })
+                //.AddRoles<IdentityRole>() 
                 .AddEntityFrameworkStores<BookingDbContext>()
                 .AddDefaultTokenProviders();
 
-            _ = services
-                 .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-                 .AddJwtBearer(options =>
-                 {
-                     options.TokenValidationParameters = new TokenValidationParameters
-                     {
-                         ValidateIssuer = true,
-                         ValidateAudience = true,
-                         ValidateLifetime = true,
-                         ValidateIssuerSigningKey = true,
-                         ValidIssuer = config["Jwt:Issuer"],
-                         ValidAudience = config["Jwt:Audience"],
-                         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(config["Jwt:Key"]
-                            ?? throw new InvalidOperationException("Missing:Jwt:Key")))
-                     };
-                // })
-                //.AddGoogle(options =>
-                //{
-                //    options.ClientId = config["Authentication:Google:ClientId"]
-                //        ?? throw new InvalidOperationException("Missing Google:ClientId"); ;
-                //    options.ClientSecret = config["Authentication:Google:ClientSecret"]
-                //        ?? throw new InvalidOperationException("Missing Google:ClientSecret"); ;
-                //    options.CallbackPath = "/signin-google";
-                //    // Explicitly request the profile scope
-                //    options.Scope.Add("profile");
-
-                //    // Map the picture to a claim
-                //    options.ClaimActions.MapJsonKey("urn:google:picture", "picture", "url");
-                });
             return services;
         }
     }

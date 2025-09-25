@@ -6,6 +6,8 @@ namespace ct_backend.Domain.Entities
     public class User : IdentityUser
     {
         public string FullName { get; set; }
+        public string? FirstName { get; set; }
+        public string? LastName { get; set; }
 
         [MaxLength(255)]
         public string? AvatarUrl { get; set; }
