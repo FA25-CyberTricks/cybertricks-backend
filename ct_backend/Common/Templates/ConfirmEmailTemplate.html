@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <title>CyberTricks - Confirm</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #0a0a0a;
+            color: #fff;
+            line-height: 1.6;
+        }
+
+        .email-container {
+            max-width: 600px;
+            margin: 20px auto;
+            background: #141414;
+            border-radius: 12px;
+            border: 1px solid #AA0000;
+            overflow: hidden;
+            box-shadow: 0 8px 20px rgba(220,38,38,0.25);
+        }
+
+        .header {
+            background: #AA0000;
+            text-align: center;
+            padding: 24px 16px;
+            font-size: 26px;
+            font-weight: 800;
+            color: #fff;
+        }
+
+        .content {
+            padding: 32px 24px;
+            text-align: center;
+        }
+
+        .sub {
+            text-transform: uppercase;
+            font-size: 12px;
+            letter-spacing: 1px;
+            color: #bbb;
+            margin-bottom: 6px;
+        }
+
+        .welcome-text {
+            font-size: 22px;
+            font-weight: 800;
+            margin-bottom: 16px;
+            color: #f7f7f7;
+        }
+
+        .description {
+            font-size: 15px;
+            color: #ddd;
+            margin-bottom: 24px;
+        }
+
+        .badges {
+            margin-bottom: 24px;
+        }
+
+        .badge {
+            display: inline-block;
+            background: #2a2a2a;
+            color: #f7f7f7;
+            font-size: 12px;
+            padding: 6px 10px;
+            border-radius: 6px;
+            margin: 0 4px 6px;
+            border: 1px solid #444;
+        }
+
+        .divider {
+            height: 1px;
+            background: #AA0000;
+            margin: 24px 0;
+        }
+
+        .confirm-button {
+            display: inline-block;
+            background-color: #AA0000 !important; /* nền đỏ */
+            color: #f7f7f7 !important; /* chữ trắng */
+            text-decoration: none !important; /* bỏ gạch chân */
+            padding: 14px 30px;
+            border-radius: 30px;
+            font-size: 18px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: background .2s;
+        }
+
+            .confirm-button:hover {
+                background: #b91c1c;
+            }
+
+        .footer {
+            background: #101010;
+            text-align: center;
+            padding: 20px;
+            font-size: 13px;
+            color: #999;
+            border-top: 1px solid #333;
+        }
+
+            .footer a {
+                color: #ff4d4d;
+                text-decoration: none;
+                margin: 0 8px;
+            }
+    </style>
+</head>
+<body>
+  <div class="email-container">
+    <!-- Header -->
+    <div class="header">🎮 CyberTricks</div>
+
+    <!-- Content -->
+    <div class="content">
+      <div class="sub">Welcome Player</div>
+      <h1 class="welcome-text text-white">Ready Up!</h1>
+      <p class="description">
+          Thank you for signing up <strong>CyberTricks</strong>. To start enjoying
+          please confirm your email address by clicking the button below.
+      </p>
+
+      <div class="badges">
+        <span class="badge">🔴 Dark HUD</span>
+        <span class="badge">🎯 Quick Match</span>
+        <span class="badge">💾 Cloud Save</span>
+      </div>
+
+      <div class="divider"></div>
+
+      <a href="{{ .ConfirmationURL }}" class="confirm-button">
+           Confirm & Start
+      </a>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+      <p>This email was sent to:<strong style="color:#ff4d4d">{{ .Email }}</strong></p>
+      <p>
+        <a href="#">🎮 App</a> | 
+        <a href="#">🌐 Website</a> | 
+        <a href="#">🛠 Support</a>
+      </p>
+      <p>© 2025 CyberTricks. All rights reserved.<br>If you did not create this account, please ignore this email.</p>
+      <p style="font-size:12px;color:#777;">🕹️ CyberTricks — Play Anywhere, Anytime</p>
+    </div>
+  </div>
+</body>
+</html>

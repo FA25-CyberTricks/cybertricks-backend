@@ -1,4 +1,8 @@
 ﻿using ct_backend.Infrastructure.Extension.Database;
+using ct_backend.Infrastructure.Extension.Jwt;
+using ct_backend.Infrastructure.Extension.Mail;
+using ct_backend.Infrastructure.Extension.Swagger;
+using ct_backend.Infrastructure.Extensions.GoogleAuth;
 
 namespace ct_backend.Infrastructure.Extension
 {
@@ -10,21 +14,18 @@ namespace ct_backend.Infrastructure.Extension
         )
         {
             services.AddDatabase(config);
-            //services.AddMailService(config);
-            //services.AddGoogleAuthService(config);
+            services.AddJwtAuthentication(config);
+            services.AddMailService(config);
+            services.AddGoogleAuthService(config);
             //services.AddStorageService(config);
             //services.AddRabbitMq(config);
             //services.AddPayment(config);
             //services.AddHuggingfaceService();
-
-
-            //services.AddScoped<IUnitOfWork, MySQLUnitOfWork>();
-
-            //services.AddScopedServicesByConvention(typeof(IMovieService).Assembly);
-
+            services.AddSwaggerWithAuth();
             services.AddAutoMapper(cfg => cfg.AddMaps(AppDomain.CurrentDomain.GetAssemblies()));
 
             return services;
         }
+
     }
 }

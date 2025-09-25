@@ -1,5 +1,7 @@
+using ct_backend.Domain.Entities;
 using ct_backend.Infrastructure.Data;
 using ct_backend.Infrastructure.Extension;
+using Microsoft.AspNetCore.Identity;
 
 namespace ct_backend
 {
@@ -35,7 +37,10 @@ namespace ct_backend
             //using (var scope = app.Services.CreateScope())
             //{
             //    var ctx = scope.ServiceProvider.GetRequiredService<BookingDbContext>();
-            //    var seeder = new DatabaseSeeder(ctx);
+            //    var userManager = scope.ServiceProvider.GetRequiredService<UserManager<User>>();
+            //    var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+
+            //    var seeder = new DatabaseSeeder(ctx, userManager, roleManager);
             //    await seeder.SeedAllAsync();
             //}
 

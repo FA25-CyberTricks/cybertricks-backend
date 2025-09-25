@@ -26,5 +26,6 @@ namespace ct_backend.Domain.Entities
         public virtual IEnumerable<StoreImage> Images { get; set; }
         public virtual IEnumerable<Floor> Floors { get; set; }
         public virtual IEnumerable<Booking> Bookings { get; set; }
+        public virtual IEnumerable<StoreAccount> StoreAccounts { get; set; }
     }
 }
