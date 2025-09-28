@@ -34,12 +34,12 @@ namespace ct.backend.Infrastructure.Data
             //await SeedRoomsAsync();
             //await SeedMachinesAsync();
             //await SeedMenuCategoriesAsync();
-            //await SeedMenuItemsAsync();
-            await SeedRolesAsync();
-            await SeedUsersAsync();
-            await SeedBrandOwnersAsync();
-            await SeedStoreManagersAsync();
-            await SeedStoreStaffsAsync();
+            await SeedMenuItemsAsync();
+            //await SeedRolesAsync();
+            //await SeedUsersAsync();
+            //await SeedBrandOwnersAsync();
+            //await SeedStoreManagersAsync();
+            //await SeedStoreStaffsAsync();
             return true;
         }
 
@@ -335,8 +335,6 @@ namespace ct.backend.Infrastructure.Data
             new("PIXELFORGE","Snack",   "Bánh mì pate", 20000),
         };
 
-
-        // ===================== 8) USERS =====================
         private async Task SeedMenuItemsAsync()
         {
             var brands = await _context.Brands.ToListAsync();
@@ -356,12 +354,13 @@ namespace ct.backend.Infrastructure.Data
                     CategoryId = cat.CategoryId,
                     Name = it.ItemName,
                     Price = it.Price,
-                    Active = true
+                    Active = true,
                 });
             }
             await _context.SaveChangesAsync();
         }
 
+        // ===================== 8) USERS =====================
         private async Task SeedRolesAsync()
         {
             if (!await _roleManager.Roles.AnyAsync())
@@ -550,8 +549,8 @@ namespace ct.backend.Infrastructure.Data
 
         private async Task SeedBrandOwnersAsync()
         {
-            var cyberwave = await _context.Brands.FirstAsync(c => c.Code == "CYBERWAVE");
-            var pixelForce = await _context.Brands.FirstAsync(c => c.Code == "PIXELFORGE");
+            var cyberwave = await _context.Brands.FirstOrDefaultAsync(c => c.Code == "CYBERWAVE");
+            var pixelForce = await _context.Brands.FirstOrDefaultAsync(c => c.Code == "PIXELFORGE");
 
             var owner1 = await _userManager.Users.FirstOrDefaultAsync(u => u.UserName == "Owner1");
             var owner2 = await _userManager.Users.FirstOrDefaultAsync(u => u.UserName == "Owner2");

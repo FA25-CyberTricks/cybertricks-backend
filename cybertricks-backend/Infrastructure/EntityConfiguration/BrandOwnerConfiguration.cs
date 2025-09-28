@@ -23,7 +23,7 @@ namespace ct.backend.Infrastructure.EntityConfiguration
             b.HasOne(x => x.User)
              .WithMany(u => u.BrandOwners)
              .HasForeignKey(x => x.UserId)
-             .OnDelete(DeleteBehavior.Cascade);
+             .OnDelete(DeleteBehavior.Restrict);
 
             // ✅ Mỗi brand chỉ có 1 owner
             b.HasIndex(x => x.BrandId).IsUnique();

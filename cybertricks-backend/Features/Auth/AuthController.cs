@@ -1,15 +1,18 @@
 ﻿using ct.backend.Domain.Entities;
 using ct.backend.Features.Accounts.Ports.Mail;
+using ct.backend.Infrastructure.Data;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.WebUtilities;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Security.Cryptography;
 using System.Text;
 
-namespace ct.backend.Features.Accounts
+namespace ct.backend.Features.Auth
 {
     [Route("api/[controller]")]
     [ApiController]
@@ -21,6 +24,7 @@ namespace ct.backend.Features.Accounts
         private readonly IMailService _mailService;
         private readonly IConfiguration _config;
         private readonly IWebHostEnvironment _env;
+        private readonly BookingDbContext _db; // <- DbContext của bạn
 
         public AuthController(
             UserManager<User> userManager,
@@ -28,7 +32,8 @@ namespace ct.backend.Features.Accounts
             ILogger<AuthController> logger,
             IMailService mailService,
             IConfiguration config,
-            IWebHostEnvironment env)
+            IWebHostEnvironment env,
+            BookingDbContext db) // <- inject
         {
             _userManager = userManager;
             _signInManager = signInManager;
@@ -36,50 +41,53 @@ namespace ct.backend.Features.Accounts
             _mailService = mailService;
             _config = config;
             _env = env;
+            _db = db;
         }
 
         /// <summary>
         /// LOGIN (trả JWT)
         /// </summary>
+        /// <summary>LOGIN (Access + Refresh)</summary>
         [HttpPost("login")]
         [AllowAnonymous]
         public async Task<IActionResult> Login([FromBody] LoginRequest request)
         {
-            // 1) Tìm user theo username/email
             var user = await _userManager.FindByNameAsync(request.UserName)
                        ?? await _userManager.FindByEmailAsync(request.UserName);
-
-            // Luôn trả Unauthorized cho thông tin sai để tránh lộ dữ liệu
             if (user is null)
                 return Unauthorized(new { message = "Sai username hoặc password" });
 
-            // 2) Check password (có lockout)
-            var pwResult = await _signInManager.CheckPasswordSignInAsync(
-                user, request.Password, lockoutOnFailure: true);
-
+            var pwResult = await _signInManager.CheckPasswordSignInAsync(user, request.Password, lockoutOnFailure: true);
             if (!pwResult.Succeeded)
                 return Unauthorized(new { message = "Sai username hoặc password" });
 
-            // 3) (Tuỳ chọn) yêu cầu email đã confirm
             if (!await _userManager.IsEmailConfirmedAsync(user))
                 return Unauthorized(new { message = "Email chưa được xác nhận" });
 
-            // 4) Tạo JWT (dùng helper để thống nhất)
+            // Access token
             var jwt = await GenerateJwtAsync(user);
+            var parsed = new JwtSecurityTokenHandler().ReadJwtToken(jwt);
 
-            // 5) Trả về token + expires + roles
-            var handler = new JwtSecurityTokenHandler();
-            var parsed = handler.ReadJwtToken(jwt);
+            // Refresh token (no cookie)
+            var refreshPlain = GenerateRefreshTokenPlaintext();
+            var refreshHash = HashToken(refreshPlain);
+
+            var rt = new RefreshToken
+            {
+                UserId = user.Id,
+                TokenHash = refreshHash,
+                ExpiresAtUtc = DateTime.UtcNow.AddDays(14),
+                CreatedByIp = HttpContext.Connection.RemoteIpAddress?.ToString()
+            };
+            _db.RefreshTokens.Add(rt);
+            await _db.SaveChangesAsync();
 
             var roles = await _userManager.GetRolesAsync(user);
 
-            return Ok(new
-            {
-                token = jwt,
-                expires = parsed.ValidTo,
-                roles
-            });
+            // ✅ Không set cookie; trả refreshToken trong body
+            return Ok(new { token = jwt, refreshToken = refreshPlain, expires = parsed.ValidTo, roles });
         }
+
 
         /// <summary>
         /// REGISTER
@@ -148,6 +156,76 @@ namespace ct.backend.Features.Accounts
         }
 
         /// <summary>
+        /// REFRESH (rotate)
+        /// </summary>
+        [HttpPost("refresh")]
+        [AllowAnonymous]
+        public async Task<IActionResult> Refresh([FromBody] RefreshRequest req)
+        {
+            if (req is null || string.IsNullOrWhiteSpace(req.RefreshToken))
+                return Unauthorized(new { message = "Missing refresh token" });
+
+            var refreshHash = HashToken(req.RefreshToken);
+            var rt = await _db.RefreshTokens.FirstOrDefaultAsync(x => x.TokenHash == refreshHash);
+
+            if (rt == null || rt.RevokedAtUtc != null || rt.ExpiresAtUtc <= DateTime.UtcNow || rt.IsUsed)
+                return Unauthorized(new { message = "Invalid/expired refresh token" });
+
+            var user = await _userManager.FindByIdAsync(rt.UserId);
+            if (user == null)
+                return Unauthorized(new { message = "User not found" });
+
+            // mark used & rotate
+            rt.IsUsed = true;
+            rt.RevokedAtUtc = DateTime.UtcNow;
+            rt.RevokedByIp = HttpContext.Connection.RemoteIpAddress?.ToString();
+
+            var newPlain = GenerateRefreshTokenPlaintext();
+            var newHash = HashToken(newPlain);
+            var newRt = new RefreshToken
+            {
+                UserId = user.Id,
+                TokenHash = newHash,
+                ExpiresAtUtc = DateTime.UtcNow.AddDays(14),
+                CreatedByIp = HttpContext.Connection.RemoteIpAddress?.ToString()
+            };
+            rt.ReplacedByTokenId = newRt.Id;
+
+            _db.RefreshTokens.Add(newRt);
+            await _db.SaveChangesAsync();
+
+            // cấp access token mới
+            var newJwt = await GenerateJwtAsync(user);
+            var parsed = new JwtSecurityTokenHandler().ReadJwtToken(newJwt);
+
+            // ✅ Trả refreshToken mới trong body
+            return Ok(new { token = newJwt, refreshToken = newPlain, expires = parsed.ValidTo });
+        }
+
+
+        /// <summary>
+        /// LOGOUT (revoke refresh hiện tại)
+        /// </summary>
+        [HttpPost("logout")]
+        public async Task<IActionResult> Logout([FromBody] RefreshRequest req)
+        {
+            // FE gửi refresh token hiện tại để revoke
+            if (req is null || string.IsNullOrWhiteSpace(req.RefreshToken))
+                return Ok(new { message = "Logged out" }); // idempotent
+
+            var hash = HashToken(req.RefreshToken);
+            var rt = await _db.RefreshTokens.FirstOrDefaultAsync(x => x.TokenHash == hash);
+            if (rt != null && rt.RevokedAtUtc == null)
+            {
+                rt.RevokedAtUtc = DateTime.UtcNow;
+                rt.RevokedByIp = HttpContext.Connection.RemoteIpAddress?.ToString();
+                await _db.SaveChangesAsync();
+            }
+            return Ok(new { message = "Logged out" });
+        }
+
+
+        /// <summary>
         /// CONFIRM EMAIL
         /// </summary>
         [HttpGet("confirm-email")]
@@ -188,35 +266,59 @@ namespace ct.backend.Features.Accounts
 
         private async Task<string> GenerateJwtAsync(User user)
         {
-            // Lấy claims cơ bản + roles
-            var claims = new List<Claim>
-        {
-            new Claim(JwtRegisteredClaimNames.Sub, user.Id),
-            new Claim(JwtRegisteredClaimNames.Email, user.Email ?? string.Empty),
-            new Claim(JwtRegisteredClaimNames.UniqueName, user.UserName ?? string.Empty),
-        };
+            var issuer = _config["Jwt:Issuer"] ?? throw new InvalidOperationException("Missing Jwt:Issuer");
+            var audience = _config["Jwt:Audience"] ?? throw new InvalidOperationException("Missing Jwt:Audience");
+            var secret = _config["Jwt:Key"] ?? throw new InvalidOperationException("Missing Jwt:Key");
+            if (secret.Length < 32) throw new InvalidOperationException("Jwt:Key should be at least 32 characters.");
+
+            var expiresMinutes = int.TryParse(_config["Jwt:ExpiresMinutes"], out var m) ? m : 60;
+            var now = DateTime.UtcNow;
 
             var roles = await _userManager.GetRolesAsync(user);
-            claims.AddRange(roles.Select(r => new Claim(ClaimTypes.Role, r)));
 
-            // Ký JWT
-            var secret = _config["Jwt:Key"];
-            var issuer = _config["Jwt:Issuer"];
-            var audience = _config["Jwt:Audience"];
-            var expiresMinutes = int.TryParse(_config["Jwt:ExpiresMinutes"], out var m) ? m : 60;
+            // chỉ giữ claim ngắn, đủ dùng
+            var claims = new List<Claim>
+            {
+                new("sub",  user.Id),
+                new("name", user.UserName ?? string.Empty),
 
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret!));
+                new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString("N")),
+                new(JwtRegisteredClaimNames.Iat, new DateTimeOffset(now).ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer64),
+            };
+            claims.AddRange(roles.Select(r => new Claim("role", r))); 
+
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret));
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
             var token = new JwtSecurityToken(
                 issuer: issuer,
                 audience: audience,
                 claims: claims,
-                expires: DateTime.UtcNow.AddMinutes(expiresMinutes),
+                notBefore: now,
+                expires: now.AddMinutes(expiresMinutes),
                 signingCredentials: creds
             );
 
             return new JwtSecurityTokenHandler().WriteToken(token);
+        }
+
+        private static string GenerateRefreshTokenPlaintext()
+        {
+            var bytes = RandomNumberGenerator.GetBytes(32); // 256-bit
+            return Base64UrlEncode(bytes);
+        }
+
+        private static string HashToken(string tokenPlaintext)
+        {
+            using var sha = SHA256.Create();
+            var hash = sha.ComputeHash(Encoding.UTF8.GetBytes(tokenPlaintext));
+            return Convert.ToHexString(hash); // hoặc Base64Url cho ngắn
+        }
+
+        private static string Base64UrlEncode(byte[] bytes)
+        {
+            return Convert.ToBase64String(bytes)
+                .TrimEnd('=').Replace('+', '-').Replace('/', '_');
         }
     }
 }

@@ -19,7 +19,7 @@ namespace ct.backend.Domain.Entities
         public int DislikesCount { get; set; } = 0;
 
         public ReviewVisibility Visibility { get; set; } = ReviewVisibility.@public;
-        public ReviewStatus Status { get; set; } = ReviewStatus.approved;
+        public ReviewStatus? Status { get; set; } = ReviewStatus.approved;
 
         [MaxLength(20)] 
         public string Source { get; set; } = "web";

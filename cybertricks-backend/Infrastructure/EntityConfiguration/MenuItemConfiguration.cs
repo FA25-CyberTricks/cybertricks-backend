@@ -14,7 +14,7 @@ namespace ct.backend.Infrastructure.EntityConfiguration
             b.Property(x => x.Name).HasMaxLength(200).IsRequired();
             b.Property(x => x.Price).HasColumnType("decimal(12,2)");
             b.Property(x => x.Active).HasDefaultValue(true);
-            b.Property(x => x.Url).HasMaxLength(500).IsRequired();
+            b.Property(x => x.Url).HasMaxLength(500);
 
             b.HasOne(x => x.Brand)
              .WithMany()

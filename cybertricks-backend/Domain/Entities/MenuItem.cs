@@ -13,7 +13,7 @@ namespace ct.backend.Domain.Entities
         public virtual MenuCategory? Category { get; set; }
 
         [MaxLength(500)]
-        public string Url { get; set; } = default!;
+        public string? Url { get; set; }
 
         [MaxLength(200)] 
         public string Name { get; set; } = default!;
