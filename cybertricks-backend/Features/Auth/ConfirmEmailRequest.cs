@@ -1,4 +1,4 @@
-﻿namespace ct.backend.Features.Accounts
+﻿namespace ct.backend.Features.Auth
 {
     public class ConfirmEmailRequest
     {

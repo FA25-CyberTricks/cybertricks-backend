@@ -24,6 +24,11 @@ namespace ct.backend
                     .AllowAnyOrigin()
                     .AllowAnyHeader()
                     .AllowAnyMethod());
+
+                opt.AddPolicy("frontend", p => p
+                   .WithOrigins("https://your-frontend.app") // FE domain
+                   .AllowAnyHeader()
+                   .AllowAnyMethod());
             });
 
             builder.Services.AddControllers();
@@ -33,16 +38,16 @@ namespace ct.backend
 
             var app = builder.Build();
 
-            //// Seed Database
-            //using (var scope = app.Services.CreateScope())
-            //{
-            //    var ctx = scope.ServiceProvider.GetRequiredService<BookingDbContext>();
-            //    var userManager = scope.ServiceProvider.GetRequiredService<UserManager<User>>();
-            //    var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+            // Seed Database
+            using (var scope = app.Services.CreateScope())
+            {
+                var ctx = scope.ServiceProvider.GetRequiredService<BookingDbContext>();
+                var userManager = scope.ServiceProvider.GetRequiredService<UserManager<User>>();
+                var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
 
-            //    var seeder = new DatabaseSeeder(ctx, userManager, roleManager);
-            //    await seeder.SeedAllAsync();
-            //}
+                var seeder = new DatabaseSeeder(ctx, userManager, roleManager);
+                await seeder.SeedAllAsync();
+            }
 
             app.UseForwardedHeaders();
 
@@ -55,7 +60,14 @@ namespace ct.backend
 
             app.UseHttpsRedirection();
 
-            app.UseCors();
+            if (app.Environment.IsDevelopment())
+            {
+                app.UseCors(); 
+            }
+            else
+            {
+                app.UseCors("frontend");
+            }
 
             app.UseAuthentication();
             app.UseAuthorization();

@@ -44,6 +44,7 @@ namespace ct.backend.Infrastructure.Data
 
         // Additional
         public DbSet<StoreAccount> StoreAccounts { get; set; }
+        public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
 
 
         public BookingDbContext(DbContextOptions<BookingDbContext> options)

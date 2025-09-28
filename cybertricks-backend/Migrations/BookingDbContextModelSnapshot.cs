@@ -2,7 +2,6 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
-using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using ct.backend.Infrastructure.Data;
 
@@ -11,11 +10,9 @@ using ct.backend.Infrastructure.Data;
 namespace ct.backend.Migrations
 {
     [DbContext(typeof(BookingDbContext))]
-    [Migration("20250916161304_initDb")]
-    partial class initDb
+    partial class BookingDbContextModelSnapshot : ModelSnapshot
     {
-        /// <inheritdoc />
-        protected override void BuildTargetModel(ModelBuilder modelBuilder)
+        protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -194,7 +191,6 @@ namespace ct.backend.Migrations
                         .HasColumnType("int");
 
                     b.Property<DateTime>("UpdatedAt")
-                        .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("datetime")
                         .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
@@ -231,7 +227,6 @@ namespace ct.backend.Migrations
                         .HasColumnType("decimal(12,2)");
 
                     b.Property<DateTime>("UpdatedAt")
-                        .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("datetime")
                         .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
@@ -295,7 +290,6 @@ namespace ct.backend.Migrations
                         .HasDefaultValue("active");
 
                     b.Property<DateTime>("UpdatedAt")
-                        .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("datetime")
                         .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
@@ -325,7 +319,6 @@ namespace ct.backend.Migrations
                         .HasColumnType("tinyint(1)");
 
                     b.Property<DateTime>("UpdatedAt")
-                        .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("datetime")
                         .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
@@ -378,7 +371,6 @@ namespace ct.backend.Migrations
                         .HasColumnType("int");
 
                     b.Property<DateTime>("UpdatedAt")
-                        .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("datetime")
                         .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
@@ -437,7 +429,6 @@ namespace ct.backend.Migrations
                         .HasColumnType("decimal(12,2)");
 
                     b.Property<DateTime>("UpdatedAt")
-                        .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("datetime")
                         .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
@@ -484,7 +475,6 @@ namespace ct.backend.Migrations
                         .HasColumnType("decimal(12,2)");
 
                     b.Property<DateTime>("UpdatedAt")
-                        .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("datetime")
                         .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
@@ -547,7 +537,6 @@ namespace ct.backend.Migrations
                         .HasColumnType("varchar(200)");
 
                     b.Property<DateTime>("UpdatedAt")
-                        .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("datetime")
                         .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
@@ -588,7 +577,6 @@ namespace ct.backend.Migrations
                         .HasDefaultValue("available");
 
                     b.Property<DateTime>("UpdatedAt")
-                        .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("datetime")
                         .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
@@ -625,7 +613,6 @@ namespace ct.backend.Migrations
                         .HasColumnType("varchar(200)");
 
                     b.Property<DateTime>("UpdatedAt")
-                        .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("datetime")
                         .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
@@ -667,49 +654,6 @@ namespace ct.backend.Migrations
                         .HasColumnType("decimal(12,2)");
 
                     b.Property<DateTime>("UpdatedAt")
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("datetime")
-                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
-
-                    b.HasKey("ItemId");
-
-                    b.HasIndex("CategoryId");
-
-                    b.HasIndex("BrandId", "Name");
-
-                    b.ToTable("MenuItems", (string)null);
-                });
-
-            modelBuilder.Entity("ct.backend.Domain.Entities.MenuItemImage", b =>
-                {
-                    b.Property<int>("ImageId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    b.Property<string>("Caption")
-                        .HasMaxLength(200)
-                        .HasColumnType("varchar(200)");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime")
-                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
-
-                    b.Property<bool>("IsPrimary")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("tinyint(1)")
-                        .HasDefaultValue(false);
-
-                    b.Property<int>("ItemId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("SortOrder")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasDefaultValue(0);
-
-                    b.Property<DateTime>("UpdatedAt")
-                        .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("datetime")
                         .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
@@ -718,11 +662,13 @@ namespace ct.backend.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("varchar(500)");
 
-                    b.HasKey("ImageId");
+                    b.HasKey("ItemId");
 
-                    b.HasIndex("ItemId", "IsPrimary");
+                    b.HasIndex("CategoryId");
 
-                    b.ToTable("MenuItemImages", (string)null);
+                    b.HasIndex("BrandId", "Name");
+
+                    b.ToTable("MenuItems", (string)null);
                 });
 
             modelBuilder.Entity("ct.backend.Domain.Entities.Message", b =>
@@ -771,7 +717,6 @@ namespace ct.backend.Migrations
                         .HasColumnType("varchar(20)");
 
                     b.Property<DateTime>("UpdatedAt")
-                        .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("datetime")
                         .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
@@ -834,7 +779,6 @@ namespace ct.backend.Migrations
                         .HasColumnType("varchar(20)");
 
                     b.Property<DateTime>("UpdatedAt")
-                        .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("datetime")
                         .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
@@ -893,7 +837,6 @@ namespace ct.backend.Migrations
                         .HasColumnType("decimal(12,2)");
 
                     b.Property<DateTime>("UpdatedAt")
-                        .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("datetime")
                         .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
@@ -943,7 +886,6 @@ namespace ct.backend.Migrations
                         .HasColumnType("decimal(12,2)");
 
                     b.Property<DateTime>("UpdatedAt")
-                        .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("datetime")
                         .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
@@ -991,7 +933,6 @@ namespace ct.backend.Migrations
                         .HasColumnType("varchar(30)");
 
                     b.Property<DateTime>("UpdatedAt")
-                        .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("datetime")
                         .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
@@ -1005,6 +946,50 @@ namespace ct.backend.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("Payments", (string)null);
+                });
+
+            modelBuilder.Entity("ct.backend.Domain.Entities.RefreshToken", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("char(36)");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("CreatedByIp")
+                        .HasColumnType("longtext");
+
+                    b.Property<DateTime>("ExpiresAtUtc")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<bool>("IsUsed")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<Guid?>("ReplacedByTokenId")
+                        .HasColumnType("char(36)");
+
+                    b.Property<DateTime?>("RevokedAtUtc")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("RevokedByIp")
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("TokenHash")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("varchar(128)");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TokenHash")
+                        .IsUnique();
+
+                    b.ToTable("RefreshTokens");
                 });
 
             modelBuilder.Entity("ct.backend.Domain.Entities.Refund", b =>
@@ -1032,7 +1017,6 @@ namespace ct.backend.Migrations
                         .HasColumnType("datetime(6)");
 
                     b.Property<DateTime>("UpdatedAt")
-                        .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("datetime")
                         .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
@@ -1081,14 +1065,10 @@ namespace ct.backend.Migrations
                         .HasDefaultValue("web");
 
                     b.Property<string>("Status")
-                        .IsRequired()
-                        .ValueGeneratedOnAdd()
                         .HasMaxLength(20)
-                        .HasColumnType("varchar(20)")
-                        .HasDefaultValue("approved");
+                        .HasColumnType("varchar(20)");
 
                     b.Property<DateTime>("UpdatedAt")
-                        .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("datetime")
                         .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
@@ -1149,7 +1129,6 @@ namespace ct.backend.Migrations
                         .HasColumnType("varchar(20)");
 
                     b.Property<DateTime>("UpdatedAt")
-                        .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("datetime")
                         .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
@@ -1200,7 +1179,6 @@ namespace ct.backend.Migrations
                         .HasDefaultValue("active");
 
                     b.Property<DateTime>("UpdatedAt")
-                        .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("datetime")
                         .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
@@ -1209,6 +1187,46 @@ namespace ct.backend.Migrations
                     b.HasIndex("BrandId", "Name");
 
                     b.ToTable("Stores", (string)null);
+                });
+
+            modelBuilder.Entity("ct.backend.Domain.Entities.StoreAccount", b =>
+                {
+                    b.Property<int>("StoreAccountId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    b.Property<string>("AccountHolder")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
+
+                    b.Property<string>("AccountNumber")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)");
+
+                    b.Property<string>("BankName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime")
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+                    b.Property<int>("StoreId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime")
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+                    b.HasKey("StoreAccountId");
+
+                    b.HasIndex("StoreId");
+
+                    b.ToTable("StoreAccounts", (string)null);
                 });
 
             modelBuilder.Entity("ct.backend.Domain.Entities.StoreImage", b =>
@@ -1240,7 +1258,6 @@ namespace ct.backend.Migrations
                         .HasColumnType("int");
 
                     b.Property<DateTime>("UpdatedAt")
-                        .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("datetime")
                         .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
@@ -1254,6 +1271,42 @@ namespace ct.backend.Migrations
                     b.HasIndex("StoreId", "IsCover");
 
                     b.ToTable("StoreImages", (string)null);
+                });
+
+            modelBuilder.Entity("ct.backend.Domain.Entities.StoreManager", b =>
+                {
+                    b.Property<int>("StoreManagerId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime")
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+                    b.Property<bool>("IsPrimary")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<int>("StoreId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime")
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("varchar(255)");
+
+                    b.HasKey("StoreManagerId");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("StoreId", "UserId")
+                        .IsUnique();
+
+                    b.ToTable("StoreManagers", (string)null);
                 });
 
             modelBuilder.Entity("ct.backend.Domain.Entities.StoreStaff", b =>
@@ -1274,7 +1327,6 @@ namespace ct.backend.Migrations
                         .HasColumnType("int");
 
                     b.Property<DateTime>("UpdatedAt")
-                        .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("datetime")
                         .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
@@ -1283,14 +1335,9 @@ namespace ct.backend.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("varchar(255)");
 
-                    b.Property<string>("UserId1")
-                        .HasColumnType("varchar(255)");
-
                     b.HasKey("StoreStaffId");
 
                     b.HasIndex("UserId");
-
-                    b.HasIndex("UserId1");
 
                     b.HasIndex("StoreId", "UserId")
                         .IsUnique();
@@ -1324,6 +1371,9 @@ namespace ct.backend.Migrations
                     b.Property<bool>("EmailConfirmed")
                         .HasColumnType("tinyint(1)");
 
+                    b.Property<string>("FirstName")
+                        .HasColumnType("longtext");
+
                     b.Property<string>("FullName")
                         .IsRequired()
                         .HasColumnType("longtext");
@@ -1333,6 +1383,9 @@ namespace ct.backend.Migrations
 
                     b.Property<DateTime?>("LastLogin")
                         .HasColumnType("datetime");
+
+                    b.Property<string>("LastName")
+                        .HasColumnType("longtext");
 
                     b.Property<bool>("LockoutEnabled")
                         .HasColumnType("tinyint(1)");
@@ -1496,7 +1549,7 @@ namespace ct.backend.Migrations
                     b.HasOne("ct.backend.Domain.Entities.User", "User")
                         .WithMany("BrandOwners")
                         .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("Brand");
@@ -1600,17 +1653,6 @@ namespace ct.backend.Migrations
                     b.Navigation("Brand");
 
                     b.Navigation("Category");
-                });
-
-            modelBuilder.Entity("ct.backend.Domain.Entities.MenuItemImage", b =>
-                {
-                    b.HasOne("ct.backend.Domain.Entities.MenuItem", "Item")
-                        .WithMany("Images")
-                        .HasForeignKey("ItemId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Item");
                 });
 
             modelBuilder.Entity("ct.backend.Domain.Entities.Message", b =>
@@ -1778,6 +1820,17 @@ namespace ct.backend.Migrations
                     b.Navigation("Brand");
                 });
 
+            modelBuilder.Entity("ct.backend.Domain.Entities.StoreAccount", b =>
+                {
+                    b.HasOne("ct.backend.Domain.Entities.Store", "Store")
+                        .WithMany("StoreAccounts")
+                        .HasForeignKey("StoreId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.Navigation("Store");
+                });
+
             modelBuilder.Entity("ct.backend.Domain.Entities.StoreImage", b =>
                 {
                     b.HasOne("ct.backend.Domain.Entities.Store", "Store")
@@ -1789,7 +1842,7 @@ namespace ct.backend.Migrations
                     b.Navigation("Store");
                 });
 
-            modelBuilder.Entity("ct.backend.Domain.Entities.StoreStaff", b =>
+            modelBuilder.Entity("ct.backend.Domain.Entities.StoreManager", b =>
                 {
                     b.HasOne("ct.backend.Domain.Entities.Store", "Store")
                         .WithMany()
@@ -1800,12 +1853,27 @@ namespace ct.backend.Migrations
                     b.HasOne("ct.backend.Domain.Entities.User", "User")
                         .WithMany()
                         .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Store");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("ct.backend.Domain.Entities.StoreStaff", b =>
+                {
+                    b.HasOne("ct.backend.Domain.Entities.Store", "Store")
+                        .WithMany()
+                        .HasForeignKey("StoreId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("ct.backend.Domain.Entities.User", null)
+                    b.HasOne("ct.backend.Domain.Entities.User", "User")
                         .WithMany("StoreStaffs")
-                        .HasForeignKey("UserId1");
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
 
                     b.Navigation("Store");
 
@@ -1848,8 +1916,6 @@ namespace ct.backend.Migrations
 
             modelBuilder.Entity("ct.backend.Domain.Entities.MenuItem", b =>
                 {
-                    b.Navigation("Images");
-
                     b.Navigation("OrderItems");
                 });
 
@@ -1875,6 +1941,8 @@ namespace ct.backend.Migrations
                     b.Navigation("Floors");
 
                     b.Navigation("Images");
+
+                    b.Navigation("StoreAccounts");
                 });
 
             modelBuilder.Entity("ct.backend.Domain.Entities.User", b =>

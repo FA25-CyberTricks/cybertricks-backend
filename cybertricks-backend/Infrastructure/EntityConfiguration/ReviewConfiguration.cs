@@ -19,8 +19,7 @@ namespace ct.backend.Infrastructure.EntityConfiguration
             b.Property(x => x.Source).HasMaxLength(20).HasDefaultValue("web");
 
             b.Property(x => x.Visibility).AsStringEnum().HasMaxLength(20);
-            b.Property(x => x.Status).AsStringEnum().HasMaxLength(20)
-             .HasDefaultValue(ReviewStatus.approved);
+            b.Property(x => x.Status).AsStringEnum().HasMaxLength(20);
 
             b.HasOne(x => x.Brand)
              .WithMany()

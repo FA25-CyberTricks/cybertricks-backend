@@ -6,6 +6,7 @@ using ct.backend.Common.Pagination;
 using ct.backend.Common.Validate;
 using ct.backend.Domain.Entities;
 using ct.backend.Infrastructure.Data;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -29,6 +30,7 @@ namespace ct.backend.Features.Brands
         /// <summary>
         /// Create a brand
         /// </summary>
+        [Authorize(Roles = "Admin")]
         public override async Task<ActionResult<AbstractResponse<BrandDto>>> Create([FromBody] CreateBrandRequest request, CancellationToken ct)
         {
             var response = new BrandResponse<BrandDto>();

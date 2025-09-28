@@ -23,7 +23,7 @@ namespace ct.backend.Infrastructure.EntityConfiguration
             b.HasOne(x => x.User)
              .WithMany() // hoặc .WithMany(u => u.StoreManagers)
              .HasForeignKey(x => x.UserId)
-             .OnDelete(DeleteBehavior.Cascade);
+             .OnDelete(DeleteBehavior.Restrict);
 
             // ✅ Tránh trùng staff trong cùng 1 store
             b.HasIndex(x => new { x.StoreId, x.UserId }).IsUnique();
