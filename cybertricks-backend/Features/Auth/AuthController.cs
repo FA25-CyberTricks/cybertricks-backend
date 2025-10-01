@@ -7,7 +7,9 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Org.BouncyCastle.Asn1.Ocsp;
 using System.IdentityModel.Tokens.Jwt;
+using System.Reflection.Metadata.Ecma335;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
@@ -52,23 +54,24 @@ namespace ct.backend.Features.Auth
         [AllowAnonymous]
         public async Task<IActionResult> Login([FromBody] LoginRequest request)
         {
-            var user = await _userManager.FindByNameAsync(request.UserName)
-                       ?? await _userManager.FindByEmailAsync(request.UserName);
+            var user = await _userManager.FindByNameAsync(request.Email)
+                       ?? await _userManager.FindByEmailAsync(request.Email);
+
             if (user is null)
-                return Unauthorized(new { message = "Sai username hoặc password" });
+                return Unauthorized(new { message = "User does not exist" });
 
             var pwResult = await _signInManager.CheckPasswordSignInAsync(user, request.Password, lockoutOnFailure: true);
             if (!pwResult.Succeeded)
-                return Unauthorized(new { message = "Sai username hoặc password" });
+                return Unauthorized(new { message = "Wrong password" });
 
             if (!await _userManager.IsEmailConfirmedAsync(user))
-                return Unauthorized(new { message = "Email chưa được xác nhận" });
+                return Unauthorized(new { message = "Email not confirmed" });
 
             // Access token
             var jwt = await GenerateJwtAsync(user);
             var parsed = new JwtSecurityTokenHandler().ReadJwtToken(jwt);
 
-            // Refresh token (no cookie)
+            // Refresh token
             var refreshPlain = GenerateRefreshTokenPlaintext();
             var refreshHash = HashToken(refreshPlain);
 
@@ -76,18 +79,137 @@ namespace ct.backend.Features.Auth
             {
                 UserId = user.Id,
                 TokenHash = refreshHash,
-                ExpiresAtUtc = DateTime.UtcNow.AddDays(14),
+                ExpiresAtUtc = DateTime.UtcNow.AddDays(int.Parse(_config["Jwt:ExpireDays"] ?? "14")),
                 CreatedByIp = HttpContext.Connection.RemoteIpAddress?.ToString()
             };
             _db.RefreshTokens.Add(rt);
             await _db.SaveChangesAsync();
 
+            // Set HttpOnly cookie
+            Response.Cookies.Append("refreshToken", refreshPlain, new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = true,
+                SameSite = SameSiteMode.Strict,
+                Expires = rt.ExpiresAtUtc
+            });
+
             var roles = await _userManager.GetRolesAsync(user);
 
-            // ✅ Không set cookie; trả refreshToken trong body
-            return Ok(new { token = jwt, refreshToken = refreshPlain, expires = parsed.ValidTo, roles });
+            return Ok(new
+            {
+                token = jwt,
+                expires = parsed.ValidTo,
+                user = new
+                {
+                    id = user.Id,
+                    email = user.Email,
+                    fullName = user.FullName,
+                    firstName = user.FirstName,
+                    lastName = user.LastName,
+                    avatarUrl = user.AvatarUrl,
+                    role = roles
+                },
+                returnUrk = request.returnUrl ?? "/"
+            });
+        }
+        /// <summary>
+        /// REFRESH (rotate)
+        /// </summary>
+        [HttpPost("refresh")]
+        [AllowAnonymous]
+        public async Task<IActionResult> Refresh(string? returnUrl)
+        {
+            var refreshPlain = Request.Cookies["refreshToken"];
+            if (string.IsNullOrEmpty(refreshPlain))
+                return Unauthorized(new { message = "Missing refresh token" });
+
+            var refreshHash = HashToken(refreshPlain);
+            var rt = await _db.RefreshTokens.FirstOrDefaultAsync(x => x.TokenHash == refreshHash);
+
+            if (rt == null || rt.RevokedAtUtc != null || rt.ExpiresAtUtc <= DateTime.UtcNow || rt.IsUsed)
+                return Unauthorized(new { message = "Invalid/expired refresh token" });
+
+            var user = await _userManager.FindByIdAsync(rt.UserId);
+            if (user == null)
+                return Unauthorized(new { message = "User not found" });
+
+            // mark used & rotate
+            rt.IsUsed = true;
+            rt.RevokedAtUtc = DateTime.UtcNow;
+            rt.RevokedByIp = HttpContext.Connection.RemoteIpAddress?.ToString();
+
+            var newPlain = GenerateRefreshTokenPlaintext();
+            var newHash = HashToken(newPlain);
+            var newRt = new RefreshToken
+            {
+                UserId = user.Id,
+                TokenHash = newHash,
+                ExpiresAtUtc = DateTime.UtcNow.AddDays(int.Parse(_config["Jwt:ExpireDays"] ?? "14")),
+                CreatedByIp = HttpContext.Connection.RemoteIpAddress?.ToString()
+            };
+            rt.ReplacedByTokenId = newRt.Id;
+
+            _db.RefreshTokens.Add(newRt);
+            await _db.SaveChangesAsync();
+
+            // cấp access token mới
+            var newJwt = await GenerateJwtAsync(user);
+            var parsed = new JwtSecurityTokenHandler().ReadJwtToken(newJwt);
+
+            // Set lại cookie
+            Response.Cookies.Append("refreshToken", newPlain, new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = true,
+                SameSite = SameSiteMode.Strict,
+                Expires = newRt.ExpiresAtUtc
+            });
+
+            var roles = await _userManager.GetRolesAsync(user);
+
+            return Ok(new
+            {
+                token = newJwt,
+                expires = parsed.ValidTo,
+                user = new
+                {
+                    id = user.Id,
+                    email = user.Email,
+                    fullName = user.FullName,
+                    firstName = user.FirstName,
+                    lastName = user.LastName,
+                    avatarUrl = user.AvatarUrl,
+                    role = roles
+                },
+                returnUrl = returnUrl ?? "/"
+            });
         }
 
+        /// <summary>
+        /// LOGOUT (revoke refresh hiện tại)
+        /// </summary>
+        [HttpPost("logout")]
+        public async Task<IActionResult> Logout()
+        {
+            var refreshPlain = Request.Cookies["refreshToken"];
+            if (!string.IsNullOrEmpty(refreshPlain))
+            {
+                var hash = HashToken(refreshPlain);
+                var rt = await _db.RefreshTokens.FirstOrDefaultAsync(x => x.TokenHash == hash);
+                if (rt != null && rt.RevokedAtUtc == null)
+                {
+                    rt.RevokedAtUtc = DateTime.UtcNow;
+                    rt.RevokedByIp = HttpContext.Connection.RemoteIpAddress?.ToString();
+                    await _db.SaveChangesAsync();
+                }
+            }
+
+            // xoá cookie client
+            Response.Cookies.Delete("refreshToken");
+
+            return Ok(new { message = "Logged out" });
+        }
 
         /// <summary>
         /// REGISTER
@@ -99,7 +221,9 @@ namespace ct.backend.Features.Auth
             // 1) Check tồn tại
             var existed = await _userManager.FindByEmailAsync(request.Email);
             if (existed != null)
-                return BadRequest(new { message = "UserName hoặc Email đã tồn tại" });
+                return BadRequest(new { message = "UserName or Email is existed" });
+            if (request.Password != request.ConfirmPassword)
+                return BadRequest(new { message = "The password and the confirmation password are mismatched" });
 
             // 2) Tạo user
             Random random = new Random();
@@ -107,17 +231,24 @@ namespace ct.backend.Features.Auth
             {
                 UserName = request.Email.Split('@')[0]
                     + $"{random.Next(0, 10)}{random.Next(0, 10)}{random.Next(0, 10)}{random.Next(0, 10)}",
-                FullName = request.Fullname,
+                AvatarUrl = _config["AppSettings:DefaultAvatarUrl"],
+                FirstName = request.FirstName,
+                LastName = request.LastName,
+                FullName = $"{request.FirstName} {request.LastName}",
                 Email = request.Email,
                 EmailConfirmed = false
             };
 
             var create = await _userManager.CreateAsync(user, request.Password);
             if (!create.Succeeded)
-                return BadRequest(create.Errors);
+            {
+                var errorMessage = create.Errors.FirstOrDefault()?.Description;
+
+                return BadRequest(new { message = errorMessage });
+            }
 
             // (optional) gán role mặc định
-             await _userManager.AddToRoleAsync(user, "User");
+            await _userManager.AddToRoleAsync(user, "User");
 
             // 3) Tạo token confirm + encode an toàn cho URL
             var rawToken = await _userManager.GenerateEmailConfirmationTokenAsync(user);
@@ -150,80 +281,10 @@ namespace ct.backend.Features.Auth
 
             return Ok(new
             {
-                message = "Đăng ký thành công. Vui lòng kiểm tra email để xác nhận tài khoản.",
+                message = "Registration successful. Please check your email to confirm your account.",
                 confirmUrl // giữ để dev debug; prod có thể bỏ
             });
         }
-
-        /// <summary>
-        /// REFRESH (rotate)
-        /// </summary>
-        [HttpPost("refresh")]
-        [AllowAnonymous]
-        public async Task<IActionResult> Refresh([FromBody] RefreshRequest req)
-        {
-            if (req is null || string.IsNullOrWhiteSpace(req.RefreshToken))
-                return Unauthorized(new { message = "Missing refresh token" });
-
-            var refreshHash = HashToken(req.RefreshToken);
-            var rt = await _db.RefreshTokens.FirstOrDefaultAsync(x => x.TokenHash == refreshHash);
-
-            if (rt == null || rt.RevokedAtUtc != null || rt.ExpiresAtUtc <= DateTime.UtcNow || rt.IsUsed)
-                return Unauthorized(new { message = "Invalid/expired refresh token" });
-
-            var user = await _userManager.FindByIdAsync(rt.UserId);
-            if (user == null)
-                return Unauthorized(new { message = "User not found" });
-
-            // mark used & rotate
-            rt.IsUsed = true;
-            rt.RevokedAtUtc = DateTime.UtcNow;
-            rt.RevokedByIp = HttpContext.Connection.RemoteIpAddress?.ToString();
-
-            var newPlain = GenerateRefreshTokenPlaintext();
-            var newHash = HashToken(newPlain);
-            var newRt = new RefreshToken
-            {
-                UserId = user.Id,
-                TokenHash = newHash,
-                ExpiresAtUtc = DateTime.UtcNow.AddDays(14),
-                CreatedByIp = HttpContext.Connection.RemoteIpAddress?.ToString()
-            };
-            rt.ReplacedByTokenId = newRt.Id;
-
-            _db.RefreshTokens.Add(newRt);
-            await _db.SaveChangesAsync();
-
-            // cấp access token mới
-            var newJwt = await GenerateJwtAsync(user);
-            var parsed = new JwtSecurityTokenHandler().ReadJwtToken(newJwt);
-
-            // ✅ Trả refreshToken mới trong body
-            return Ok(new { token = newJwt, refreshToken = newPlain, expires = parsed.ValidTo });
-        }
-
-
-        /// <summary>
-        /// LOGOUT (revoke refresh hiện tại)
-        /// </summary>
-        [HttpPost("logout")]
-        public async Task<IActionResult> Logout([FromBody] RefreshRequest req)
-        {
-            // FE gửi refresh token hiện tại để revoke
-            if (req is null || string.IsNullOrWhiteSpace(req.RefreshToken))
-                return Ok(new { message = "Logged out" }); // idempotent
-
-            var hash = HashToken(req.RefreshToken);
-            var rt = await _db.RefreshTokens.FirstOrDefaultAsync(x => x.TokenHash == hash);
-            if (rt != null && rt.RevokedAtUtc == null)
-            {
-                rt.RevokedAtUtc = DateTime.UtcNow;
-                rt.RevokedByIp = HttpContext.Connection.RemoteIpAddress?.ToString();
-                await _db.SaveChangesAsync();
-            }
-            return Ok(new { message = "Logged out" });
-        }
-
 
         /// <summary>
         /// CONFIRM EMAIL
@@ -233,7 +294,7 @@ namespace ct.backend.Features.Auth
         public async Task<IActionResult> ConfirmEmail([FromQuery] string userId, [FromQuery] string token, [FromQuery] string? returnUrl = null)
         {
             var user = await _userManager.FindByIdAsync(userId);
-            if (user is null) return BadRequest(new { message = "User không tồn tại" });
+            if (user is null) return BadRequest(new { message = "User does not exist" });
 
             // Decode token về dạng raw
             var decodedBytes = WebEncoders.Base64UrlDecode(token);
@@ -241,14 +302,14 @@ namespace ct.backend.Features.Auth
 
             var result = await _userManager.ConfirmEmailAsync(user, rawToken);
             if (!result.Succeeded)
-                return BadRequest(new { message = "Xác nhận email thất bại", errors = result.Errors });
+                return BadRequest(new { message = "Email confirmation failed", errors = result.Errors });
 
             // Option 1: Redirect về FE nếu có returnUrl (SPA/FE site)
             if (!string.IsNullOrWhiteSpace(returnUrl))
                 return Redirect(returnUrl);
 
             // Option 2: Trả JSON
-            return Ok(new { message = "Xác nhận email thành công" });
+            return Ok(new { message = "Email confirmation successful" });
         }
 
         /// <summary>
