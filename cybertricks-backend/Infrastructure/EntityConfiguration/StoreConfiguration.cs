@@ -21,11 +21,14 @@ namespace ct.backend.Infrastructure.EntityConfiguration
             b.Property(x => x.DisplayOrder).HasDefaultValue(0);
 
             b.HasIndex(x => new { x.BrandId, x.Name }); // tìm kiếm nhanh theo brand + tên
+                                                        // Cấu hình Latitude
+            b.Property(s => s.Latitude)
+                .HasColumnType("decimal(9,6)")   // kiểu DECIMAL(9,6) trong MySQL
+                .IsRequired(false);              // cho phép null
 
-            b.HasMany(x => x.Images)
-             .WithOne(i => i.Store)
-             .HasForeignKey(i => i.StoreId)
-             .OnDelete(DeleteBehavior.Cascade);
+            b.Property(s => s.Longitude)
+                .HasColumnType("decimal(9,6)")   // kiểu DECIMAL(9,6)
+                .IsRequired(false);              // cho phép null
 
             b.HasMany(x => x.Floors)
              .WithOne(f => f.Store)

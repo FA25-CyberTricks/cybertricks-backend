@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Identity;
+﻿using ct.backend.Domain.Enum;
+using Microsoft.AspNetCore.Identity;
 using System.ComponentModel.DataAnnotations;
 
 namespace ct.backend.Domain.Entities
@@ -18,6 +19,14 @@ namespace ct.backend.Domain.Entities
         public DateTime? SubscriptionStartDate { get; set; }
 
         public DateTime? SubscriptionEndDate { get; set; }
+
+        public Gender Gender { get; set; }
+        public DateTime? DateOfBirth { get; set; }
+
+        [MaxLength(15)]
+        public string? PhoneNumber { get; set; }
+        public string? Address { get; set; }
+        public decimal Balance { get; set; } = 0m;
 
         public bool? IsActive { get; set; } = true;
 

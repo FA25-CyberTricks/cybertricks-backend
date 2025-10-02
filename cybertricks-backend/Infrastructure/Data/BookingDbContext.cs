@@ -9,7 +9,6 @@ namespace ct.backend.Infrastructure.Data
         // Core entities
         public DbSet<Brand> Brands { get; set; }
         public DbSet<Store> Stores { get; set; }
-        public DbSet<StoreImage> StoreImages { get; set; }
         public DbSet<Floor> Floors { get; set; }
         public DbSet<Room> Rooms { get; set; }
         public DbSet<Machine> Machines { get; set; }

@@ -19,7 +19,9 @@ public class RegisterRequest
     [Required]
     [StringLength(100, ErrorMessage = "{0} length {2} to {1} characters.", MinimumLength = 3)]
     [DataType(DataType.Text)]
-    public string Fullname { set; get; }
+    public string FirstName{ set; get; }
+    public string LastName { set; get; }
+
     public string? ReturnUrl { set; get; }
 
 }

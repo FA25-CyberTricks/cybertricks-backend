@@ -26,7 +26,7 @@ namespace ct.backend
                     .AllowAnyMethod());
 
                 opt.AddPolicy("frontend", p => p
-                   .WithOrigins("https://your-frontend.app") // FE domain
+                   .WithOrigins("http://localhost:3000", "https://localhost:3000", "https://your-frontend.app")
                    .AllowAnyHeader()
                    .AllowAnyMethod());
             });

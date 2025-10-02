@@ -1,7 +1,7 @@
 ﻿using ct.backend.Domain.Entities;
 using Microsoft.AspNetCore.Identity;
 
-namespace ct.backend.Features.Accounts.Ports.GoogleAuth
+namespace ct.backend.Features.Auth.Ports.GoogleAuth
 {
     public interface IGoogleAuthService
     {

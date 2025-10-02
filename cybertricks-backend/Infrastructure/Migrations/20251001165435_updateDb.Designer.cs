@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using ct.backend.Infrastructure.Data;
 
@@ -10,9 +11,11 @@ using ct.backend.Infrastructure.Data;
 namespace ct.backend.Migrations
 {
     [DbContext(typeof(BookingDbContext))]
-    partial class BookingDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251001165435_updateDb")]
+    partial class updateDb
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -658,7 +661,6 @@ namespace ct.backend.Migrations
                         .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                     b.Property<string>("Url")
-                        .IsRequired()
                         .HasMaxLength(500)
                         .HasColumnType("varchar(500)");
 
@@ -1149,6 +1151,10 @@ namespace ct.backend.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("varchar(500)");
 
+                    b.Property<string>("Avatar")
+                        .HasMaxLength(500)
+                        .HasColumnType("varchar(500)");
+
                     b.Property<int>("BrandId")
                         .HasColumnType("int");
 
@@ -1156,15 +1162,28 @@ namespace ct.backend.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("varchar(50)");
 
+                    b.Property<string>("CoverImage")
+                        .HasColumnType("longtext");
+
                     b.Property<DateTime>("CreatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("datetime")
                         .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("varchar(500)");
+
                     b.Property<int>("DisplayOrder")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int")
                         .HasDefaultValue(0);
+
+                    b.Property<decimal?>("Latitude")
+                        .HasColumnType("decimal(9,6)");
+
+                    b.Property<decimal?>("Longitude")
+                        .HasColumnType("decimal(9,6)");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -1227,50 +1246,6 @@ namespace ct.backend.Migrations
                     b.HasIndex("StoreId");
 
                     b.ToTable("StoreAccounts", (string)null);
-                });
-
-            modelBuilder.Entity("ct.backend.Domain.Entities.StoreImage", b =>
-                {
-                    b.Property<int>("ImageId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    b.Property<string>("Caption")
-                        .HasMaxLength(200)
-                        .HasColumnType("varchar(200)");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime")
-                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
-
-                    b.Property<bool>("IsCover")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("tinyint(1)")
-                        .HasDefaultValue(false);
-
-                    b.Property<int>("SortOrder")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasDefaultValue(0);
-
-                    b.Property<int>("StoreId")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("datetime")
-                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
-
-                    b.Property<string>("Url")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("varchar(500)");
-
-                    b.HasKey("ImageId");
-
-                    b.HasIndex("StoreId", "IsCover");
-
-                    b.ToTable("StoreImages", (string)null);
                 });
 
             modelBuilder.Entity("ct.backend.Domain.Entities.StoreManager", b =>
@@ -1353,9 +1328,15 @@ namespace ct.backend.Migrations
                     b.Property<int>("AccessFailedCount")
                         .HasColumnType("int");
 
+                    b.Property<string>("Address")
+                        .HasColumnType("longtext");
+
                     b.Property<string>("AvatarUrl")
                         .HasMaxLength(255)
                         .HasColumnType("varchar(255)");
+
+                    b.Property<decimal>("Balance")
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<string>("ConcurrencyStamp")
                         .IsConcurrencyToken()
@@ -1363,6 +1344,9 @@ namespace ct.backend.Migrations
 
                     b.Property<DateTime?>("CreatedAt")
                         .HasColumnType("datetime");
+
+                    b.Property<DateTime?>("DateOfBirth")
+                        .HasColumnType("datetime(6)");
 
                     b.Property<string>("Email")
                         .HasMaxLength(256)
@@ -1377,6 +1361,11 @@ namespace ct.backend.Migrations
                     b.Property<string>("FullName")
                         .IsRequired()
                         .HasColumnType("longtext");
+
+                    b.Property<string>("Gender")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("varchar(20)");
 
                     b.Property<bool?>("IsActive")
                         .HasColumnType("tinyint(1)");
@@ -1405,7 +1394,8 @@ namespace ct.backend.Migrations
                         .HasColumnType("longtext");
 
                     b.Property<string>("PhoneNumber")
-                        .HasColumnType("varchar(255)");
+                        .HasMaxLength(15)
+                        .HasColumnType("varchar(15)");
 
                     b.Property<bool>("PhoneNumberConfirmed")
                         .HasColumnType("tinyint(1)");
@@ -1831,17 +1821,6 @@ namespace ct.backend.Migrations
                     b.Navigation("Store");
                 });
 
-            modelBuilder.Entity("ct.backend.Domain.Entities.StoreImage", b =>
-                {
-                    b.HasOne("ct.backend.Domain.Entities.Store", "Store")
-                        .WithMany("Images")
-                        .HasForeignKey("StoreId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Store");
-                });
-
             modelBuilder.Entity("ct.backend.Domain.Entities.StoreManager", b =>
                 {
                     b.HasOne("ct.backend.Domain.Entities.Store", "Store")
@@ -1939,8 +1918,6 @@ namespace ct.backend.Migrations
                     b.Navigation("Bookings");
 
                     b.Navigation("Floors");
-
-                    b.Navigation("Images");
 
                     b.Navigation("StoreAccounts");
                 });

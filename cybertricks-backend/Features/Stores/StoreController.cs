@@ -5,9 +5,11 @@ using ct.backend.Common.Message;
 using ct.backend.Common.Pagination;
 using ct.backend.Common.Validate;
 using ct.backend.Domain.Entities;
+using ct.backend.Domain.Enum;
 using ct.backend.Infrastructure.Data;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Linq.Expressions;
 
 namespace ct.backend.Features.Stores
 {
@@ -45,7 +47,7 @@ namespace ct.backend.Features.Stores
 
             // 2. Check exist
             var exists = await _context.Stores.AnyAsync(b =>
-                b.BrandId == request.BrandId && 
+                b.BrandId == request.BrandId &&
                 b.Name == request.Name, ct);
 
             if (exists)
@@ -173,6 +175,7 @@ namespace ct.backend.Features.Stores
         /// <summary>
         /// Get store by id  
         /// </summary>
+        [HttpGet("{id}")]
         public override async Task<ActionResult<AbstractResponse<StoreDto>>> GetById([FromRoute] int id, CancellationToken ct)
         {
             var response = new StoreResponse<StoreDto>();
@@ -194,11 +197,13 @@ namespace ct.backend.Features.Stores
         /// <summary>
         /// Get all stores (no paging) - use with caution
         /// </summary>
+        [HttpGet("all")]
         public override async Task<ActionResult<AbstractResponse<IEnumerable<StoreDto>>>> GetAll(CancellationToken ct)
         {
             var response = new StoreResponse<IEnumerable<StoreDto>>();
             var storeDtos = await _context.Stores
                 .AsNoTracking()
+                .OrderBy(b => b.Latitude) // default order by newest
                 .ProjectTo<StoreDto>(_mapper.ConfigurationProvider)
                 .ToListAsync(ct);
 
@@ -210,23 +215,56 @@ namespace ct.backend.Features.Stores
         /// <summary>
         /// Get stores with paging, filtering, sorting 
         /// </summary>
-        public override async Task<ActionResult<AbstractResponse<PaginatedList<StoreDto>>>> GetPaged([FromQuery] QueryStoreRequest request, CancellationToken ct)
+        [HttpGet]
+        public override async Task<ActionResult<AbstractResponse<PaginatedList<StoreDto>>>> GetPaged(
+        [FromQuery] QueryStoreRequest request, CancellationToken ct)
         {
             var response = new StoreResponse<PaginatedList<StoreDto>>();
 
-            var query = _context.Stores.AsNoTracking();
+            var pageIndex = request.PageIndex <= 0 ? 1 : request.PageIndex;
+            var pageSize = request.PageSize <= 0 ? 10 : Math.Min(request.PageSize, 100);
 
+            IQueryable<Store> query = _context.Stores.AsNoTracking();
+
+            // --- Search ---
+            if (!string.IsNullOrWhiteSpace(request.q))
+            {
+                var q = request.q.Trim();
+                query = query.Where(s =>
+                    (s.Name != null && EF.Functions.Like(s.Name, $"%{q}%")) ||
+                    (s.Address != null && EF.Functions.Like(s.Address, $"%{q}%"))
+                );
+            }
+
+            // --- Filters ---
+            if (request.BrandId.HasValue)
+                query = query.Where(s => s.BrandId == request.BrandId.Value);
+
+            // --- Filters ---
             query = request.Desc
-                ? query.OrderByDescending(b => b.Name)
-                : query.OrderBy(b => b.Name);
+                ? query.OrderBy(x => x.Latitude)
+                : query.OrderBy(x => x.Name);
 
+            if (!string.IsNullOrWhiteSpace(request.Status))
+            {
+                if (Enum.TryParse<StoreStatus>(request.Status, true, out var status))
+                    query = query.Where(s => s.Status == status);
+            }
+
+            // --- Sorting fallback ---
+            if (request.SortBy?.ToLower() != "distance")
+            {
+                query = request.SortBy?.ToLower() switch
+                {
+                    "name" => request.Desc ? query.OrderByDescending(s => s.Name) : query.OrderBy(s => s.Name),
+                    "createdat" => request.Desc ? query.OrderByDescending(s => s.CreatedAt) : query.OrderBy(s => s.CreatedAt),
+                    _ => request.Desc ? query.OrderByDescending(s => s.DisplayOrder) : query.OrderBy(s => s.DisplayOrder)
+                };
+            }
+
+            // --- Projection & Pagination ---
             var projected = query.ProjectTo<StoreDto>(_mapper.ConfigurationProvider);
-
-            var paged = await PaginatedList<StoreDto>.CreateAsync(
-                            projected,
-                            request.PageIndex,
-                            request.PageSize,
-                            ct);
+            var paged = await PaginatedList<StoreDto>.CreateAsync(projected, pageIndex, pageSize, ct);
 
             response.Data = paged;
             response.Message = MessageCodes.E000;

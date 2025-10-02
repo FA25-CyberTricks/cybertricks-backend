@@ -18,6 +18,7 @@ namespace ct.backend.Infrastructure.EntityConfiguration
             builder.Property(x => x.CreatedAt).HasColumnType("datetime");
             builder.Property(x => x.UpdatedAt).HasColumnType("datetime");
             builder.Property(x => x.LastLogin).HasColumnType("datetime");
+            builder.Property(x => x.Gender).AsStringEnum().HasMaxLength(20);
 
             // Index tiện lợi
             builder.HasIndex(x => x.Email);

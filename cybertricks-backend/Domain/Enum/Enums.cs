@@ -39,4 +39,5 @@
     public enum NotificationType { system, booking, order, payment, issue }
     public enum NotificationChannel { inapp, email, sms, push }
     public enum NotificationStatus { queued, sending, sent, failed, read }
+    public enum Gender { male, female, other }
 }
