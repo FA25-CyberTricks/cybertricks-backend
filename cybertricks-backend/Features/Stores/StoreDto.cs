@@ -16,5 +16,9 @@ namespace ct.backend.Features.Stores
 
         [MaxLength(50)]
         public string? ContactPhone { get; set; }
+
+        public decimal? Latitude { get; set; }   // DECIMAL(9,6) 
+
+        public string? Avatar { get; set; }
     }
 }

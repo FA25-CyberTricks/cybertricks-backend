@@ -1,5 +1,6 @@
 ﻿using ct.backend.Domain.Entities;
-using ct.backend.Features.Accounts.Ports.Mail;
+using ct.backend.Features.Auth.Ports.GoogleAuth;
+using ct.backend.Features.Auth.Ports.Mail;
 using ct.backend.Infrastructure.Data;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -7,9 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using Org.BouncyCastle.Asn1.Ocsp;
 using System.IdentityModel.Tokens.Jwt;
-using System.Reflection.Metadata.Ecma335;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
@@ -20,30 +19,33 @@ namespace ct.backend.Features.Auth
     [ApiController]
     public class AuthController : ControllerBase
     {
+        private readonly BookingDbContext _db; // <- DbContext của bạn
         private readonly UserManager<User> _userManager;
         private readonly SignInManager<User> _signInManager;
         private readonly ILogger<AuthController> _logger;
         private readonly IMailService _mailService;
         private readonly IConfiguration _config;
         private readonly IWebHostEnvironment _env;
-        private readonly BookingDbContext _db; // <- DbContext của bạn
+        private readonly IGoogleAuthService _googleAuthService; // <- Google auth service
 
         public AuthController(
+            BookingDbContext db,
             UserManager<User> userManager,
             SignInManager<User> signInManager,
             ILogger<AuthController> logger,
             IMailService mailService,
             IConfiguration config,
             IWebHostEnvironment env,
-            BookingDbContext db) // <- inject
+            IGoogleAuthService googleAuthService)
         {
+            _db = db;
             _userManager = userManager;
             _signInManager = signInManager;
             _logger = logger;
             _mailService = mailService;
             _config = config;
             _env = env;
-            _db = db;
+            _googleAuthService = googleAuthService;
         }
 
         /// <summary>
@@ -89,7 +91,7 @@ namespace ct.backend.Features.Auth
             Response.Cookies.Append("refreshToken", refreshPlain, new CookieOptions
             {
                 HttpOnly = true,
-                Secure = true,
+                Secure = !_env.IsDevelopment(),
                 SameSite = SameSiteMode.Strict,
                 Expires = rt.ExpiresAtUtc
             });
@@ -161,7 +163,7 @@ namespace ct.backend.Features.Auth
             Response.Cookies.Append("refreshToken", newPlain, new CookieOptions
             {
                 HttpOnly = true,
-                Secure = true,
+                Secure = !_env.IsDevelopment(),
                 SameSite = SameSiteMode.Strict,
                 Expires = newRt.ExpiresAtUtc
             });
@@ -176,7 +178,6 @@ namespace ct.backend.Features.Auth
                 {
                     id = user.Id,
                     email = user.Email,
-                    fullName = user.FullName,
                     firstName = user.FirstName,
                     lastName = user.LastName,
                     avatarUrl = user.AvatarUrl,
@@ -209,6 +210,149 @@ namespace ct.backend.Features.Auth
             Response.Cookies.Delete("refreshToken");
 
             return Ok(new { message = "Logged out" });
+        }
+
+        [HttpGet("google-login")]
+        [AllowAnonymous]
+        public IActionResult rGoogleLogin(string? returnUrl = "/")
+        {
+            // FE gọi endpoint này → BE redirect qua Google
+            var redirectUrl = Url.Action(nameof(GoogleCallback), "Auth", new { returnUrl });
+            var props = _signInManager.ConfigureExternalAuthenticationProperties("Google", redirectUrl);
+            return Challenge(props, "Google");
+        }
+
+        [HttpGet("google-callback")]
+        [AllowAnonymous]
+        public async Task<IActionResult> GoogleCallback(string? returnUrl = "/")
+        {
+            var info = await _googleAuthService.GetExternalLoginInfoAsync();
+            if (info == null)
+                return Content("<script>window.opener.postMessage({ error: 'GoogleLoginFailed' }, '*');window.close();</script>", "text/html");
+
+            // Check login or auto create
+            var signInResult = await _googleAuthService.ExternalLoginSignInAsync(info.LoginProvider, info.ProviderKey);
+            User? user;
+
+            if (signInResult.Succeeded)
+            {
+                user = await _userManager.FindByLoginAsync(info.LoginProvider, info.ProviderKey);
+            }
+            else
+            {
+                var email = info.Principal.FindFirstValue(ClaimTypes.Email);
+                var name = info.Principal.FindFirstValue(ClaimTypes.Name);
+                var avatar = info.Principal.FindFirstValue("urn:google:picture");
+
+                if (string.IsNullOrEmpty(email))
+                    return Content("<script>window.opener.postMessage({ error: 'NoEmail' }, '*');window.close();</script>", "text/html");
+
+                // Split name
+                var parts = (name ?? email).Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                var firstName = parts.FirstOrDefault() ?? email;
+                var lastName = parts.Length > 1 ? string.Join(" ", parts.Skip(1)) : "";
+
+                user = await _userManager.FindByEmailAsync(email);
+                if (user != null)
+                {
+                    await _googleAuthService.AddLoginAsync(user, info);
+                }
+                else
+                {
+                    user = new User
+                    {
+                        UserName = email,
+                        Email = email,
+                        FullName = name ?? email,
+                        FirstName = firstName,
+                        LastName = lastName,
+                        AvatarUrl = avatar ?? _config["AppSettings:DefaultAvatarUrl"],
+                        EmailConfirmed = true
+                    };
+
+                    var create = await _userManager.CreateAsync(user);
+                    if (!create.Succeeded)
+                    {
+                        var err = create.Errors.FirstOrDefault()?.Description;
+                        return Content($"<script>window.opener.postMessage({{ error: 'Failed: {err}' }}, '*');window.close();</script>", "text/html");
+                    }
+
+                    await _userManager.AddToRoleAsync(user, "User");
+                    await _googleAuthService.AddLoginAsync(user, info);
+                }
+            }
+
+            if (user == null)
+                return Content("<script>window.opener.postMessage({ error: 'UserNotFound' }, '*');window.close();</script>", "text/html");
+
+            // JWT + refresh
+            var jwt = await GenerateJwtAsync(user);
+            var refreshPlain = GenerateRefreshTokenPlaintext();
+            var refreshHash = HashToken(refreshPlain);
+            _db.RefreshTokens.Add(new RefreshToken
+            {
+                UserId = user.Id,
+                TokenHash = refreshHash,
+                ExpiresAtUtc = DateTime.UtcNow.AddDays(int.Parse(_config["Jwt:ExpireDays"] ?? "14")),
+                CreatedByIp = HttpContext.Connection.RemoteIpAddress?.ToString()
+            });
+            await _db.SaveChangesAsync();
+
+            Response.Cookies.Append("refreshToken", refreshPlain, new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = !_env.IsDevelopment(),
+                SameSite = SameSiteMode.Strict,
+                Expires = DateTime.UtcNow.AddDays(int.Parse(_config["Jwt:ExpireDays"] ?? "14"))
+            });
+
+            var roles = await _userManager.GetRolesAsync(user);
+
+            // ✅ Gửi token + user về FE qua postMessage và tự đóng popup
+            var json = System.Text.Json.JsonSerializer.Serialize(new
+            {
+                token = jwt,
+                user = new
+                {
+                    id = user.Id,
+                    email = user.Email,
+                    firstName = user.FirstName,
+                    lastName = user.LastName,
+                    avatarUrl = user.AvatarUrl,
+                    role = roles
+                },
+                returnUrl
+            });
+
+            // LƯU Ý: Lấy origin của FE từ query ?opener=... (nếu có) hoặc fallback sang document.referrer
+            var html = $@"<!doctype html>
+                        <html>
+                          <body>
+                            <script>
+                              (function() {{
+                                try {{
+                                  var params = new URLSearchParams(window.location.search);
+                                  var openerFromQuery = params.get('opener');
+                                  var openerOrigin = openerFromQuery || (document.referrer ? new URL(document.referrer).origin : '*');
+
+                                  // payload đã được server serialize ở biến C# {nameof(json)}:
+                                  var payload = {json};
+
+                                  if (window.opener && !window.opener.closed) {{
+                                    window.opener.postMessage(payload, openerOrigin);
+                                  }}
+                                }} catch (e) {{
+                                  // im lặng
+                                }} finally {{
+                                  // defer 1 tick để đảm bảo postMessage flush trước khi đóng
+                                  setTimeout(function() {{ window.close(); }}, 0);
+                                }}
+                              }})();
+                            </script>
+                          </body>
+                        </html>";
+            return Content(html, "text/html; charset=utf-8");
+
         }
 
         /// <summary>
@@ -346,7 +490,7 @@ namespace ct.backend.Features.Auth
                 new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString("N")),
                 new(JwtRegisteredClaimNames.Iat, new DateTimeOffset(now).ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer64),
             };
-            claims.AddRange(roles.Select(r => new Claim("role", r))); 
+            claims.AddRange(roles.Select(r => new Claim("role", r)));
 
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret));
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);

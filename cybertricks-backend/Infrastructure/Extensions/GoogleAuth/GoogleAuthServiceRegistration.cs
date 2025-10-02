@@ -1,6 +1,7 @@
-﻿using ct.backend.Features.Accounts.Ports.GoogleAuth;
+﻿using ct.backend.Features.Auth.Ports.GoogleAuth;
 using ct.backend.Infrastructure.ExternalServices.Auth;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Identity;
 
 namespace ct.backend.Infrastructure.Extensions.GoogleAuth;
 public static class GoogleAuthServiceRegistration
@@ -27,7 +28,11 @@ public static class GoogleAuthServiceRegistration
         //    });
 
         services
-        .AddAuthentication()
+        .AddAuthentication(options =>
+        {
+            options.DefaultScheme = IdentityConstants.ApplicationScheme;
+            options.DefaultSignInScheme = IdentityConstants.ExternalScheme;
+        })
         .AddGoogle(options =>
         {
             options.ClientId = config["Authentication:Google:ClientId"]
@@ -40,6 +45,13 @@ public static class GoogleAuthServiceRegistration
 
             // Map the picture to a claim
             options.ClaimActions.MapJsonKey("urn:google:picture", "picture", "url");
+
+            options.Events.OnRemoteFailure = context =>
+            {
+                context.Response.Redirect("/api/auth/google-callback?error=access_denied");
+                context.HandleResponse(); // chặn exception mặc định
+                return Task.CompletedTask;
+            };
         });
 
         services.AddScoped<IGoogleAuthService, GoogleAuthService>();

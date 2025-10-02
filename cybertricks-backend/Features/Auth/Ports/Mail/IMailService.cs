@@ -1,4 +1,4 @@
-﻿namespace ct.backend.Features.Accounts.Ports.Mail
+﻿namespace ct.backend.Features.Auth.Ports.Mail
 {
     public interface IMailService
     {

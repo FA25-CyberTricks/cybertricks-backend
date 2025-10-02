@@ -1,4 +1,4 @@
-﻿using ct.backend.Features.Accounts.Ports.Mail;
+﻿using ct.backend.Features.Auth.Ports.Mail;
 using MailKit.Security;
 using Microsoft.Extensions.Options;
 using MimeKit;
