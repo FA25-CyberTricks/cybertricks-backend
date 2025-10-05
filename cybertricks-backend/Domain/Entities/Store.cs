@@ -25,6 +25,7 @@ namespace ct.backend.Domain.Entities
         [MaxLength(500)]
         public string? Avatar { get; set; }
         public string? CoverImage { get; set; }
+        public int? Visited { get; set; } = 0;
 
         [MaxLength(50)] 
         public string? ContactPhone { get; set; }

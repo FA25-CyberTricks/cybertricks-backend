@@ -34,12 +34,13 @@ namespace ct.backend.Infrastructure.Data
             //await SeedRoomsAsync();
             //await SeedMachinesAsync();
             //await SeedMenuCategoriesAsync();
-            await SeedMenuItemsAsync();
+            //await SeedMenuItemsAsync();
             //await SeedRolesAsync();
             //await SeedUsersAsync();
             //await SeedBrandOwnersAsync();
             //await SeedStoreManagersAsync();
             //await SeedStoreStaffsAsync();
+            await SeedVouchersAsync();
             return true;
         }
 
@@ -627,6 +628,57 @@ namespace ct.backend.Infrastructure.Data
                 await _context.StoreStaffs.AddRangeAsync(storeStaffs);
                 await _context.SaveChangesAsync();
             }
+        }
+
+        private async Task SeedVouchersAsync()
+        {
+            if (await _context.Vouchers.AnyAsync()) return;
+
+            var store1 = await _context.Stores.FirstOrDefaultAsync();
+            var store2 = await _context.Stores.Skip(1).FirstOrDefaultAsync();
+
+            var vouchers = new List<Voucher>
+            {
+                new Voucher
+                {
+                    Code = "WELCOME10",
+                    Description = "Giảm 10% cho khách hàng mới",
+                    DiscountPercent = 10,
+                    StartDate = DateTime.UtcNow,
+                    EndDate = DateTime.UtcNow.AddMonths(3),
+                    UsageLimit = 500,
+                    UsedCount = 0,
+                    Status = VoucherStatus.Active
+                },
+                new Voucher
+                {
+                    Code = "STORE50K",
+                    Description = "Giảm 50.000đ cho đơn hàng tại Store A",
+                    StoreId = store1?.StoreId,
+                    DiscountAmount = 50000,
+                    MinOrderAmount = 200000,
+                    StartDate = DateTime.UtcNow,
+                    EndDate = DateTime.UtcNow.AddMonths(2),
+                    UsageLimit = 100,
+                    Status = VoucherStatus.Active
+                },
+                new Voucher
+                {
+                    Code = "VIP20",
+                    Description = "Voucher giảm 20% dành riêng cho thành viên VIP",
+                    StoreId = store2?.StoreId,
+                    DiscountPercent = 20,
+                    MinOrderAmount = 100000,
+                    MaxDiscountAmount = 100000,
+                    StartDate = DateTime.UtcNow,
+                    EndDate = DateTime.UtcNow.AddMonths(1),
+                    UsageLimit = 50,
+                    Status = VoucherStatus.Active
+                }
+            };
+
+            _context.Vouchers.AddRange(vouchers);
+            await _context.SaveChangesAsync();
         }
     }
 }

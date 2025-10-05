@@ -11,6 +11,11 @@
     public enum RoomStatus { active, maintenance, hidden }
     public enum RoomType { normal, vip, streaming }
     public enum MachineStatus { available, busy, down, maintenance }
+    public enum PricingStatus
+    {
+        Active,
+        Inactive
+    }
 
     // Booking
     public enum BookingStatus { reserved, checked_in, completed, cancelled, no_show }
@@ -40,4 +45,11 @@
     public enum NotificationChannel { inapp, email, sms, push }
     public enum NotificationStatus { queued, sending, sent, failed, read }
     public enum Gender { male, female, other }
+
+    public enum VoucherStatus
+    {
+        Active,
+        Inactive,
+        Expired
+    }
 }

@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ct.backend.Features.Brands
 {
-    [Route("api/[controller]/[action]")]
+    [Route("api/[controller]")]
     [ApiController]
     public class BrandController : AbstractController<int, CreateBrandRequest, UpdateBrandRequest, QueryBrandRequest, BrandDto>
     {

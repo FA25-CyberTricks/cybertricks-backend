@@ -10,7 +10,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ct.backend.Features.Machines
 {
-    [Route("api/[controller]/[action]")]
+    [Route("api/[controller]")]
     public class MachineController : AbstractController<int, CreateMachineRequest, UpdateMachineRequest, QueryMachineRequest, MachineDto>
     {
         private readonly BookingDbContext _context;

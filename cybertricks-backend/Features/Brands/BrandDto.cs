@@ -4,6 +4,7 @@ namespace ct.backend.Features.Brands
 {
     public class BrandDto
     {
+        [Key]
         public int? BrandId { get; set; }
 
         [MaxLength(50)]

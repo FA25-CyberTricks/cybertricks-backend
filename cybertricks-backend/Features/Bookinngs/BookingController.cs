@@ -10,7 +10,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ct.backend.Features.Bookinngs
 {
-    [Route("api/[controller]/[action]")]
+    [Route("api/[controller]")]
     [ApiController]
     public class BookingController : AbstractController<int, CreateBookingRequest, UpdateBookingRequest, QueryBookingRequest, BookingDto>
     {

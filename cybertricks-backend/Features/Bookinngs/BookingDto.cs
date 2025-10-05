@@ -6,6 +6,8 @@ namespace ct.backend.Features.Bookinngs
 {
     public class BookingDto
     {
+        [Key]
+        public int BookingId { get; set; }
         public int? StoreId { get; set; }
         public virtual Store? Store { get; set; }
 

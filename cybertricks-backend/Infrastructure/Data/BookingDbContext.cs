@@ -45,6 +45,12 @@ namespace ct.backend.Infrastructure.Data
         public DbSet<StoreAccount> StoreAccounts { get; set; }
         public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
 
+        public DbSet<Voucher> Vouchers { get; set; }
+        public DbSet<VoucherUsage> VoucherUsages { get; set; }
+
+        public DbSet<PricingRule> PricingRules { get; set; }
+        public DbSet<Favorite> Favorites { get; set; }
+
 
         public BookingDbContext(DbContextOptions<BookingDbContext> options)
          : base(options) { }

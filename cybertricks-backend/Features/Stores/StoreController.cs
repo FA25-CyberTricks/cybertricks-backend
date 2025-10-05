@@ -9,7 +9,6 @@ using ct.backend.Domain.Enum;
 using ct.backend.Infrastructure.Data;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using System.Linq.Expressions;
 
 namespace ct.backend.Features.Stores
 {
@@ -220,54 +219,6 @@ namespace ct.backend.Features.Stores
         [FromQuery] QueryStoreRequest request, CancellationToken ct)
         {
             var response = new StoreResponse<PaginatedList<StoreDto>>();
-
-            var pageIndex = request.PageIndex <= 0 ? 1 : request.PageIndex;
-            var pageSize = request.PageSize <= 0 ? 10 : Math.Min(request.PageSize, 100);
-
-            IQueryable<Store> query = _context.Stores.AsNoTracking();
-
-            // --- Search ---
-            if (!string.IsNullOrWhiteSpace(request.q))
-            {
-                var q = request.q.Trim();
-                query = query.Where(s =>
-                    (s.Name != null && EF.Functions.Like(s.Name, $"%{q}%")) ||
-                    (s.Address != null && EF.Functions.Like(s.Address, $"%{q}%"))
-                );
-            }
-
-            // --- Filters ---
-            if (request.BrandId.HasValue)
-                query = query.Where(s => s.BrandId == request.BrandId.Value);
-
-            // --- Filters ---
-            query = request.Desc
-                ? query.OrderBy(x => x.Latitude)
-                : query.OrderBy(x => x.Name);
-
-            if (!string.IsNullOrWhiteSpace(request.Status))
-            {
-                if (Enum.TryParse<StoreStatus>(request.Status, true, out var status))
-                    query = query.Where(s => s.Status == status);
-            }
-
-            // --- Sorting fallback ---
-            if (request.SortBy?.ToLower() != "distance")
-            {
-                query = request.SortBy?.ToLower() switch
-                {
-                    "name" => request.Desc ? query.OrderByDescending(s => s.Name) : query.OrderBy(s => s.Name),
-                    "createdat" => request.Desc ? query.OrderByDescending(s => s.CreatedAt) : query.OrderBy(s => s.CreatedAt),
-                    _ => request.Desc ? query.OrderByDescending(s => s.DisplayOrder) : query.OrderBy(s => s.DisplayOrder)
-                };
-            }
-
-            // --- Projection & Pagination ---
-            var projected = query.ProjectTo<StoreDto>(_mapper.ConfigurationProvider);
-            var paged = await PaginatedList<StoreDto>.CreateAsync(projected, pageIndex, pageSize, ct);
-
-            response.Data = paged;
-            response.Message = MessageCodes.E000;
             return Ok(response);
         }
     }

@@ -11,7 +11,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ct.backend.Features.Floors
 {
-    [Route("api/[controller]/[action]")]
+    [Route("api/[controller]")]
     [ApiController]
     public class FloorController : AbstractController<int, CreateFloorRequest, UpdateFloorRequest, QueryFloorRequest, FloorDto>
     {

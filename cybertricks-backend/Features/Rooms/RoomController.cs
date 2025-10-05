@@ -10,7 +10,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ct.backend.Features.Rooms
 {
-    [Route("api/[controller]/[action]")]
+    [Route("api/[controller]")]
     [ApiController]
     public class RoomController : AbstractController<int, CreateRoomRequest, UpdateRoomRequest, QueryRoomRequest, RoomDto>
     {

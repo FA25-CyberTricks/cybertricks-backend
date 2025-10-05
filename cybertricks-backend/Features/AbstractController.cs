@@ -1,7 +1,4 @@
-﻿using AutoMapper;
-using ct.backend.Common.Pagination;
-using ct.backend.Infrastructure.Data;
-using Microsoft.AspNetCore.Http;
+﻿using ct.backend.Common.Pagination;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ct.backend.Features
