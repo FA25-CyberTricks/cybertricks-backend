@@ -5,6 +5,7 @@ namespace ct.backend.Features.Rooms
 {
     public class RoomDto
     {
+        [Key]
         public int? RoomId { get; set; }
 
         public int? FloorId { get; set; }

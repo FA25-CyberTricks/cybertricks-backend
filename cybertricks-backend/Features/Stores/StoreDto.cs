@@ -4,7 +4,8 @@ namespace ct.backend.Features.Stores
 {
     public class StoreDto
     {
-        public int? StoreId { get; set; }
+        [Key]
+        public int StoreId { get; set; }
 
         public int? BrandId { get; set; }
 
