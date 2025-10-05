@@ -115,6 +115,7 @@ namespace ct.backend.Features.Auth
                 returnUrk = request.returnUrl ?? "/"
             });
         }
+
         /// <summary>
         /// REFRESH (rotate)
         /// </summary>
@@ -467,6 +468,65 @@ namespace ct.backend.Features.Auth
             return html
                 .Replace("{{ .ConfirmationURL }}", confirmationUrl)
                 .Replace("{{ .Email }}", email);
+        }
+
+        [HttpPost("forgot-password")]
+        [AllowAnonymous]
+        public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request)
+        {
+            var user = await _userManager.FindByEmailAsync(request.Email);
+            if (user == null || !(await _userManager.IsEmailConfirmedAsync(user)))
+            {
+                // Không tiết lộ thông tin user tồn tại hay không
+                return Ok(new { message = "If your email is registered, you will receive a password reset email." });
+            }
+
+            // 1. Tạo token reset password
+            var rawToken = await _userManager.GeneratePasswordResetTokenAsync(user);
+            var encodedToken = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(rawToken));
+
+            // 2. Tạo link reset password
+            var resetUrl = Url.Action(
+                action: nameof(ResetPassword),
+                controller: "Auth",
+                values: new { userId = user.Id, token = encodedToken, returnUrl = request.ReturnUrl },
+                protocol: Request.Scheme
+            );
+
+            // 3. Load template & thay placeholder
+            var emailBody = await BuildEmailBodyAsync(
+                templateFileName: "ResetPasswordTemplate.html",
+                confirmationUrl: resetUrl!,
+                email: user.Email
+            );
+
+            // 4. Gửi mail
+            await _mailService.SendMailAsync(new MailContent
+            {
+                To = user.Email,
+                Subject = "Reset your CyberTricks password",
+                Body = emailBody
+            });
+
+            return Ok(new { message = "If your email is registered, you will receive a password reset email." });
+        }
+
+        [HttpPost("reset-password")]
+        [AllowAnonymous]
+        public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request)
+        {
+            var user = await _userManager.FindByIdAsync(request.UserId);
+            if (user == null)
+                return BadRequest(new { message = "Invalid user." });
+
+            var decodedBytes = WebEncoders.Base64UrlDecode(request.Token);
+            var rawToken = Encoding.UTF8.GetString(decodedBytes);
+
+            var result = await _userManager.ResetPasswordAsync(user, rawToken, request.NewPassword);
+            if (!result.Succeeded)
+                return BadRequest(new { message = "Reset password failed", errors = result.Errors });
+
+            return Ok(new { message = "Password has been reset successfully." });
         }
 
         private async Task<string> GenerateJwtAsync(User user)
